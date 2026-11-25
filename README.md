@@ -28,7 +28,7 @@ Run it on your source folder and again on your built output (`dist`, `build` or 
 
 ## What is inside
 
-- `SKILL.md`: the instructions Claude follows: the guardrails, the 16 checks in order of damage, the safe live checks, how to rank findings, known false alarms.
+- `SKILL.md`: the instructions Claude follows: the guardrails, the 21 checks, the safe live checks, how to rank findings, known false alarms.
 - `scripts/secret_scan.py`: finds likely exposed secrets: 20 key formats, Supabase keys decoded, database URLs, `.env` files, secret names in public env variables, source maps, and with `--history` past git commits.
 - `SOURCES.md`: the incidents and documentation behind each check.
 

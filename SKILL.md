@@ -59,7 +59,7 @@ Run it on the source folder AND on the built output (`npm run build`, then scan 
 
 ## Step 2. Read the code, worst holes first
 
-Work through these in order. For each, find the actual lines, then decide PASS, FAIL or UNSURE. UNSURE goes in the report with what would settle it.
+Work through these in order. Checks 1 to 15 run roughly worst first; checks 16 to 20 are not placed by severity, so rank every finding with the table in "What to rank as serious". For each, find the actual lines, then decide PASS, FAIL or UNSURE. UNSURE goes in the report with what would settle it.
 
 ### 1. Secret keys in the browser
 - Any secret in front-end files, a public env prefix, or the built bundle. Keys meant to be public (Supabase anon or publishable key, Stripe `pk_`, Firebase config `apiKey`, analytics IDs) are fine there.
@@ -96,6 +96,7 @@ Work through these in order. For each, find the actual lines, then decide PASS, 
 ### 9. No limits on things that cost money or can be guessed
 - Login, sign-up, password reset, OTP, contact forms, invite emails and every AI call need a rate limit per user and per IP. Set a spend cap or budget alert at every paid provider.
 - Without limits: password guessing, SMS and email bills, and AI keys drained overnight.
+- Public forms (sign-up, contact, password reset) also need a bot check such as Cloudflare Turnstile or hCaptcha, with the token verified on the server. A hidden honeypot field is a first filter, not the check.
 
 ### 10. AI features that text can steer
 - Text from users, uploaded files, web pages or emails that goes into a prompt can carry instructions. Check: what tools and data can the model reach? Can it send, delete, pay or change records without a person approving? Is the model's output rendered as HTML or run as code or SQL?
@@ -118,7 +119,27 @@ Work through these in order. For each, find the actual lines, then decide PASS, 
 - Is the repository public? Was a `.env` ever committed (`--history`)? Turn on GitHub secret scanning and push protection.
 - Does the coding agent have write access to the production database or the hosting account? Keep production out of its reach, keep backups, and keep development and production databases separate. An AI agent has deleted a live database before.
 
-### 16. Headers and cookies
+### 16. Database queries built from user text
+- SQL or database filters put together by joining strings, f-strings or template literals with anything a user sent: search boxes, sort and filter parameters, IDs in the URL. Look in raw SQL, edge functions, RPC functions and filters built from text.
+- **Fix:** parameterised queries, or the client library's own filter methods. When a table or column name has to come from the user, map the choice to a fixed list the app owns. Escaping the input by hand is not the fix.
+
+### 17. Input the server never checks
+- For each route that takes input, ask what happens with a missing field, a number where text is expected, a 5,000-character string, a negative amount, or a list. A 500 error is a finding: the server trusted the shape of the request.
+- **Fix:** check type, length and range on the server with a schema (Zod, Pydantic or the framework's own), and answer 400. Checks in the browser are for fast feedback only; anyone can skip them.
+
+### 18. Uploads that accept anything
+- Check what the server allows to be uploaded. The allowed extensions should be a short list, the file type should be checked from the content and not from the `Content-Type` the browser sent, there should be a size limit, and the stored name should be one the app generated.
+- **Fix:** an allow-list of types, a size cap, generated file names, and storage away from the app's own web root: a private bucket or a separate server.
+
+### 19. Responses that return more than the screen shows
+- Read each route's response, or open the browser's network tab as a test user. Look for password hashes, other users' emails or phone numbers, internal notes, admin flags, or whole database rows (`select *`, `to_json()` on a model) where the screen shows 3 fields.
+- **Fix:** select named columns, and build each response from an explicit list of fields. Hiding a field in the page does not remove it from the response.
+
+### 20. Passwords and sensitive data stored in plain text
+- Passwords: use the auth provider, or a slow password hash. Argon2id first; scrypt or bcrypt where that is not available. Plain text, MD5 or SHA-256 on its own is a FAIL, because a fast hash lets an attacker try guesses quickly. Passwords are hashed, never encrypted.
+- Sensitive data (ID numbers, health details, bank and card details): the safest record is the one you do not store. If you must store it, encrypt the field (AES-256 in an authenticated mode such as GCM) and keep the key somewhere other than the database. Check backups, exports and logs for the same data.
+
+### 21. Headers and cookies
 - HTTPS everywhere, HSTS, `X-Content-Type-Options: nosniff`, a frame policy, a CSP. These are hardening. Rank them below everything above.
 
 ## Step 3. Live checks, only where safe
@@ -143,7 +164,7 @@ Never run scanners or attack tools against production without the owner's writte
 
 | Critical: fix today | High: fix before launch | Medium: fix soon | Low: hardening |
 |---|---|---|---|
-| Secret key in the browser or a public repo; database or bucket readable or writable by strangers; payments that can be faked; admin open to anyone | Missing login check on a server route; 1 user reading another's data; users setting their own role or price; no limits on paid or guessable actions | AI features with too much access; CORS or CSRF gaps; XSS; outdated packages with known exploits; source maps live | Headers, cookie flags, `.env` not in `.gitignore` yet, test keys in code |
+| Secret key in the browser or a public repo; database or bucket readable or writable by strangers; payments that can be faked; admin open to anyone; passwords stored in plain text | Missing login check on a server route; 1 user reading another's data; users setting their own role or price; no limits on paid or guessable actions; queries built from user text; responses that leak other users' data | AI features with too much access; CORS or CSRF gaps; XSS; outdated packages with known exploits; source maps live; unchecked input; uploads that accept anything; sensitive fields stored unencrypted | Headers, cookie flags, `.env` not in `.gitignore` yet, test keys in code, no bot check on public forms |
 
 **Know when to stop.** 0 Critical, 0 High, and a short list you understand is a good result. Say so.
 

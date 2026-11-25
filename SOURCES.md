@@ -36,6 +36,18 @@
 | MDN, CORS | https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/CORS | `Access-Control-Allow-Origin: *` cannot be used with credentials; a dynamic origin needs an allow-list and `Vary: Origin`. |
 | GitHub, push protection | https://docs.github.com/en/code-security/secret-scanning/introduction/about-push-protection | Push protection for users is on by default on GitHub.com and blocks pushing secrets to public repositories. |
 
+## Standards behind checks 16 to 20 and the bot check in check 9 (read 25-Nov-2026)
+
+| Title | URL | What it showed |
+|---|---|---|
+| OWASP, SQL Injection Prevention Cheat Sheet | https://cheatsheetseries.owasp.org/cheatsheets/SQL_Injection_Prevention_Cheat_Sheet.html | Parameterised queries are the primary defence. Table and column names from the user are mapped to a strict allow-list of values the application owns. Escaping user input is strongly discouraged. |
+| OWASP, Input Validation Cheat Sheet | https://cheatsheetseries.owasp.org/cheatsheets/Input_Validation_Cheat_Sheet.html | Validate on the server even when the browser checks the same fields; client-side validation can be bypassed and is for feedback. Define what is accepted (type, length limits, minimum and maximum values) and reject the rest. |
+| OWASP, File Upload Cheat Sheet | https://cheatsheetseries.owasp.org/cheatsheets/File_Upload_Cheat_Sheet.html | List allowed extensions. Validate the file type and do not trust the Content-Type header. Change the filename to one the application generates. Set a size limit. Store files on a different server, or outside the web root. |
+| OWASP API Security Top 10 2023, API3 Broken Object Property Level Authorization | https://owasp.org/API-Security/editions/2023/en/0xa3-broken-object-property-level-authorization/ | An endpoint exposes object properties the user should not read. Avoid generic methods such as `to_json()`; pick the specific properties to return. |
+| OWASP, Password Storage Cheat Sheet | https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html | Argon2id preferred, then scrypt, bcrypt for legacy systems, PBKDF2 where FIPS-140 is required. Fast hashes such as SHA-256 are not suitable. Passwords are hashed, not encrypted. |
+| OWASP, Cryptographic Storage Cheat Sheet | https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html | The best protection is not to store sensitive information. AES with a key of at least 128 bits, ideally 256, in an authenticated mode (GCM or CCM first). Keys stored separately from the encrypted data. |
+| Cloudflare Turnstile, Validate the token | https://developers.cloudflare.com/turnstile/get-started/server-side-validation/ | Turnstile tokens are validated on the server through the siteverify API. The page was read for that step only; the line that a honeypot is a first filter is the author's judgement, not from a source. |
+
 ## Search only (could not be opened; not cited)
 
 | Title | URL | Why listed |
